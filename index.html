@@ -46,25 +46,25 @@
         }
 
         #LoadBTN {
-        display: block;
-        margin: 20px auto;
-        font-size: 20px;
-        padding: 12px 30px;
-        background-color: #0066ff;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: 0.2s;
+            display: block;
+            margin: 20px auto;
+            font-size: 20px;
+            padding: 12px 30px;
+            background-color: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
         #greeting {
-        text-align: center;
-        margin-top: 15px;
-        font-size: 26px;
-        font-weight: 600;
-        color: #003366;
-        letter-spacing: 0.5px;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 26px;
+            font-weight: 600;
+            color: #003366;
+            letter-spacing: 0.5px;
         }
 
         #topBar {
@@ -122,7 +122,7 @@
             cursor: pointer;
         }
 
-         #profileModal {
+        #profileModal {
             display: none;
             position: fixed;
             inset: 0;
@@ -166,275 +166,358 @@
             cursor: pointer;
         }
 
+        #profileModal label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
 
+        #profileModal input[type="text"],
+        #profileModal input[type="email"],
+        #profileModal input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        #profileModal input::placeholder {
+            color: #999;
+            font-size: 13px;
+        }
+
+        #profileModal button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #profileModal button[type="submit"] {
+            background-color: #0066ff;
+            color: white;
+            border: none;
+        }
+
+        #profileModal button[type="button"] {
+            background-color: #e6e6e6;
+            color: black;
+            border: none;
+        }
     </style>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="../Scripts/ajaxCall.js">  </script> 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <script src="../Scripts/ajaxCall.js"></script>
+
     <script>
         $(document).ready(function () {
             let user = null;
             let logged = localStorage.getItem("loggedUser");
-
-            if (logged) {
-            user = JSON.parse(logged);
-
-            $("#topBar").html(`
-                <h2 id="greeting">Hello ${user.Name || user.name || user.Email || user.email}</h2>
-                <div class="actions">
-                <button id="myMealsBtn">My Meals</button>
-                <button id="addMealBtn">Add Meal</button>
-                <button id="editProfileBtn">Edit My Profile</button>
-                <button id="logoutBtn">Logout</button>
-                </div>
-            `);
-            } else {
-            $("#topBar").html(`
-                <h2 id="greeting">Hello guest</h2>
-                <div class="actions">
-                <button id="loginBtn">Login</button>
-                </div>
-            `);
-            }
-
-
-            $(document).on("click", "#loginBtn", function () {
-            window.location.href = "LoginForm.html";
-            });
-
-            $(document).on("click", "#logoutBtn", function () {
-            localStorage.removeItem("loggedUser");
-            window.location.href = "LoginForm.html";
-            });
-
-            $(document).on("click", "#myMealsBtn", function () {
-            window.location.href = "MyMeals.html";
-            });
-
-            $(document).on("click", "#addMealBtn", function () {
-            window.location.href = "NewMeal.html";
-            });
-
+            if (logged) user = JSON.parse(logged);
 
             let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
             let getAllMealsApi = server + "api/Meal/GetAllMeals";
-            let CartApi = server + "api/Meal/AddMealCart";
+            let cartApi = server + "api/Meal/AddMealCart";
+            let updateUserApi = server + "api/Users/";
+            let loginApi = server + "api/Users/Login";
 
-            $("#LoadBTN").click(function () {
-            ajaxCall("GET", getAllMealsApi, "", LoadSCB, LoadECB)
-                function LoadSCB (meals) {
-                renderMeals(meals);
-                }
-                function LoadECB (err) {
-                console.log(err);
-                }
+            renderTopBar();
 
+            $(document).on("click", "#loginBtn", function () {
+                window.location.href = "LoginForm.html";
             });
 
-            
+            $(document).on("click", "#logoutBtn", function () {
+                localStorage.removeItem("loggedUser");
+                window.location.href = "LoginForm.html";
+            });
+
+            $(document).on("click", "#myMealsBtn", function () {
+                window.location.href = "MyMeals.html";
+            });
+
+            $(document).on("click", "#addMealBtn", function () {
+                window.location.href = "NewMeal.html";
+            });
+
+            $("#LoadBTN").click(function () {
+                ajaxCall("GET", getAllMealsApi, "", function (meals) {
+                    renderMeals(meals);
+                }, function (err) {
+                    console.log(err);
+                    alert(err.responseText || "Load Meals failed");
+                });
+            });
+
             $(document).on("click", ".AddCartBTN", function () {
                 if (!user) {
-                    window.location.href = "LoginForm.html"
+                    window.location.href = "LoginForm.html";
                     return;
                 }
-            
-            let userId = user.Id || user.id;
-            let mealId = $(this).data("id");
 
-            let body = { userId: userId, mealId: mealId };
+                let userId = user.Id || user.id;
+                let mealId = $(this).data("id");
+                let body = { userId: userId, mealId: mealId };
 
-            ajaxCall("POST", CartApi, JSON.stringify(body), AddSCB, AddECB);
-            })   
-
-            function AddSCB (res) {
-                console.log(res);
-            };
-
-            function AddECB (err) {
-                console.log(err)
-            };
-
-            let updateUserApi = server + "api/Users/"; // PUT api/Users/{id}
+                ajaxCall("POST", cartApi, JSON.stringify(body), function (res) {
+                    console.log(res);
+                }, function (err) {
+                    console.log(err);
+                    alert(err.responseText || "Add To Cart failed");
+                });
+            });
 
             $(document).on("click", "#editProfileBtn", function () {
-            if (!user) return;
+                if (!user) return;
 
-            $("#profileName").val(user.Name || user.name || "");
-            $("#profileEmail").val(user.Email || user.email || "");
-            $("#profilePassword").val(""); // Not showing password
-            $("#profileModal").show();
+                $("#profileName").val(user.Name || user.name || "");
+                $("#profileEmail").val(user.Email || user.email || "");
+                $("#profileCurrentEmail").val(user.Email || user.email || "");
+                $("#profileCurrentPassword").val("");
+                $("#profileNewPassword").val("");
+                $("#profileModal").show();
             });
 
             $(document).on("click", "#closeProfileModal", function () {
                 $("#profileModal").hide();
-                });
+            });
 
             $(document).on("submit", "#profileForm", function (e) {
-            e.preventDefault();
+                e.preventDefault();
+                if (!user) return;
 
-            let userId = user.Id || user.id;
-            let newName = $("#profileName").val().trim();
-            let newEmail = $("#profileEmail").val().trim();
-            let newPassword = $("#profilePassword").val().trim();
+                let userId = user.Id || user.id;
 
-            let updateUser = {
-                Id: userId,
-                Name: newName,
-                Email: newEmail
-            };
+                let newName = $("#profileName").val().trim();
+                let newEmail = $("#profileEmail").val().trim();
 
-            if (!newName || !newEmail) {
-                alert("Name and Email are required");
-                return;
-            }
+                let currentEmail = $("#profileCurrentEmail").val().trim();
+                let currentPassword = $("#profileCurrentPassword").val().trim();
+                let newPassword = $("#profileNewPassword").val().trim();
 
-            if (newPassword !== "") {
-                updateUser.Password = newPassword;
-            }
+                if (!currentEmail || !currentPassword) {
+                    alert("Enter current email and password");
+                    return;
+                }
 
-            ajaxCall("PUT", updateUserApi + userId, JSON.stringify(updateUser), UpdateSCB, UpdateECB)
+                let storedEmail = (user.Email || user.email || "").trim().toLowerCase();
+                let typedEmail = currentEmail.trim().toLowerCase();
+                if (typedEmail !== storedEmail) {
+                    alert("Current email is incorrect");
+                    return;
+                }
 
-            function UpdateSCB (res) {
-            user = res;                                              
-            localStorage.setItem("loggedUser", JSON.stringify(user));
-            $("#greeting").text(`Hello ${user.Name || user.name || user.Email || user.email}`);
-            $("#profileModal").hide();
-            }
+                let loginPayload = {
+                    Name: (user.Name || user.name || "temp"),
+                    Email: currentEmail,
+                    Password: currentPassword,
+                    Active: true
+                };
 
-            function UpdateECB (err) {
-            console.log(err);
-            alert(err.responseText || "Update failed");
-            };
+                $.ajax({
+                    url: loginApi,
+                    type: "POST",
+                    data: JSON.stringify(loginPayload),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (authUser) {
+                        let authId = authUser.Id || authUser.id;
+                        let loggedId = user.Id || user.id;
+
+                        if (authId !== loggedId) {
+                            alert("Authentication mismatch");
+                            return;
+                        }
+
+                        doUpdateUser(userId, newName, newEmail, newPassword);
+                    },
+                    error: function (xhr) {
+                        console.log(xhr);
+                        alert(xhr.responseText || "Current email/password is incorrect");
+                    }
+                });
             });
-            
-            selectedIngredientsArr = [];
-            $(document).on("click", "#addIngredientBtn", function () {
-            let ing = $("#ingredientInput").val().trim();
-            if (!ing) return;
 
-            if (selectedIngredientsArr.includes(ing)) {
-                $("#ingredientInput").val("");
-                return;
+            function doUpdateUser(userId, newName, newEmail, newPassword) {
+                let existingPassword = user.Password || user.password || "";
+
+                let updateUser = {
+                    Id: userId,
+                    Name: (newName !== "" ? newName : (user.Name || user.name || "")),
+                    Email: (newEmail !== "" ? newEmail : (user.Email || user.email || "")),
+                    Password: (newPassword !== "" ? newPassword : existingPassword),
+                    Active: (user.Active !== undefined ? user.Active : (user.active !== undefined ? user.active : true))
+                };
+
+                if (!updateUser.Name || !updateUser.Email) {
+                    alert("Name and Email are required");
+                    return;
+                }
+
+                if (!updateUser.Password) {
+                    alert("Please enter a new password (current password is not stored locally).");
+                    return;
+                }
+
+                ajaxCall("PUT", updateUserApi + userId, JSON.stringify(updateUser), function (res) {
+                    user = res;
+                    localStorage.setItem("loggedUser", JSON.stringify(user));
+                    renderTopBar();
+                    $("#profileModal").hide();
+                    $("#profileCurrentPassword").val("");
+                    $("#profileNewPassword").val("");
+                }, function (err) {
+                    console.log(err);
+                    alert(err.responseText || "Update failed");
+                });
             }
 
-            selectedIngredientsArr.push(ing);
-            $("#ingredientInput").val("");
-            renderSelectedIngredients();
+            let selectedIngredientsArr = [];
+
+            $(document).on("click", "#addIngredientBtn", function () {
+                let ing = $("#ingredientInput").val().trim();
+                if (!ing) return;
+
+                if (selectedIngredientsArr.includes(ing)) {
+                    $("#ingredientInput").val("");
+                    return;
+                }
+
+                selectedIngredientsArr.push(ing);
+                $("#ingredientInput").val("");
+                renderSelectedIngredients();
             });
 
             $(document).on("click", "#clearIngredientsBtn", function () {
-            selectedIngredientsArr = [];
-            renderSelectedIngredients();
+                selectedIngredientsArr = [];
+                renderSelectedIngredients();
             });
 
             $(document).on("click", ".removeIngBtn", function () {
-            let idx = parseInt($(this).data("idx"));
-            selectedIngredientsArr.splice(idx, 1);
-            renderSelectedIngredients();
+                let idx = parseInt($(this).data("idx"));
+                selectedIngredientsArr.splice(idx, 1);
+                renderSelectedIngredients();
             });
 
             let getAllIngredientsApi = server + "api/Meal/GetAllIngredients";
-
-            ajaxCall("GET", getAllIngredientsApi, "", IngSCB, IngECB) 
-           
-            function IngSCB (ingredients) {
+            ajaxCall("GET", getAllIngredientsApi, "", function (ingredients) {
                 let html = "";
                 (ingredients || []).forEach(i => {
-                html += `<option value="${i}"></option>`;
+                    html += `<option value="${i}"></option>`;
                 });
                 $("#ingredientsList").html(html);
-            }
-
-            function IngECB (err) {
+            }, function (err) {
                 console.log(err);
-            }
-
-            let getByIngredientsApi = server + "api/Meal/GetByIngredients";
-
-            $(document).on("click", "#searchByIngredientsBtn", function () {
-            ajaxCall("POST", getByIngredientsApi, JSON.stringify(selectedIngredientsArr), SearchIngSCB , SearchIngECB)
-                function SearchIngSCB(meals) {
-                renderMeals(meals);
-                }
-                function SearchIngECB(err) {
-                console.log(err);
-                }
             });
 
+            let getByIngredientsApi = server + "api/Meal/GetByIngredients";
+            $(document).on("click", "#searchByIngredientsBtn", function () {
+                ajaxCall("POST", getByIngredientsApi, JSON.stringify(selectedIngredientsArr),
+                    function (meals) { renderMeals(meals); },
+                    function (err) { console.log(err); }
+                );
+            });
+
+            function renderSelectedIngredients() {
+                let html = "";
+                selectedIngredientsArr.forEach((ing, idx) => {
+                    html += `
+                        <span class="ingredient-chip">
+                            ${ing}
+                            <button class="removeIngBtn" data-idx="${idx}">✖</button>
+                        </span>
+                    `;
+                });
+                $("#selectedIngredients").html(html);
+            }
+
+            function renderMeals(meals) {
+                let html = `<div class="meals-container">`;
+                (meals || []).forEach(meal => {
+                    html += `
+                        <div class="meal-card">
+                            <img src="${meal.Image || meal.image || ""}" class="meal-img">
+                            <h3 class="meal-title">${meal.Name || meal.name || ""}</h3>
+                            <button class="AddCartBTN" data-id="${meal.Id || meal.id}">Add To Cart</button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                $("#output").html(html);
+            }
+
+            function renderTopBar() {
+                if (user) {
+                    $("#topBar").html(`
+                        <h2 id="greeting">Hello ${user.Name || user.name || user.Email || user.email}</h2>
+                        <div class="actions">
+                            <button id="myMealsBtn">My Meals</button>
+                            <button id="addMealBtn">Add Meal</button>
+                            <button id="editProfileBtn">Edit My Profile</button>
+                            <button id="logoutBtn">Logout</button>
+                        </div>
+                    `);
+                } else {
+                    $("#topBar").html(`
+                        <h2 id="greeting">Hello guest</h2>
+                        <div class="actions">
+                            <button id="loginBtn">Login</button>
+                        </div>
+                    `);
+                }
+            }
         });
-
-        let selectedIngredientsArr = [];
-
-        function renderSelectedIngredients() {
-        let html = "";
-
-        selectedIngredientsArr.forEach((ing, idx) => {
-            html += `
-            <span class="ingredient-chip">
-                ${ing}
-                <button class="removeIngBtn" data-idx="${idx}">✖</button>
-            </span>
-            `;
-        });
-
-        $("#selectedIngredients").html(html);
-        }
-
-        function renderMeals(meals) {
-        let html = `<div class="meals-container">`;
-
-        (meals || []).forEach(meal => {
-            html += `
-            <div class="meal-card">
-                <img src="${meal.Image || meal.image || ""}" class="meal-img">
-                <h3 class="meal-title">${meal.Name || meal.name || ""}</h3>
-                <button class="AddCartBTN" data-id="${meal.Id || meal.id}">Add To Cart</button>
-            </div>
-            `;
-        });
-
-        html += `</div>`;
-        $("#output").html(html);
-        }
-
-   
-    </script>   
+    </script>
 </head>
 <body>
-  <div id="topBar"></div>
+    <div id="topBar"></div>
 
-  <div id="ingredientsSearch">
-    <input id="ingredientInput" list="ingredientsList" placeholder="Type ingredient..." />
-    <datalist id="ingredientsList"></datalist>
+    <div id="ingredientsSearch">
+        <input id="ingredientInput" list="ingredientsList" placeholder="Type ingredient..." />
+        <datalist id="ingredientsList"></datalist>
 
-    <button id="addIngredientBtn" type="button">Add</button>
-    <button id="searchByIngredientsBtn" type="button">Search</button>
-    <button id="clearIngredientsBtn" type="button">Clear</button>
+        <button id="addIngredientBtn" type="button">Add</button>
+        <button id="searchByIngredientsBtn" type="button">Search</button>
+        <button id="clearIngredientsBtn" type="button">Clear</button>
 
-    <div id="selectedIngredients"></div>
-  </div>
-
-  <button id="LoadBTN">Load Meals</button>
-  <div id="output"></div>
-
-  <div id="profileModal">
-    <div class="modal-content">
-      <h3>Edit My Profile</h3>
-
-      <form id="profileForm">
-        <label>Username</label><br>
-        <input type="text" id="profileName"><br><br>
-
-        <label>Email</label><br>
-        <input type="email" id="profileEmail"><br><br>
-
-        <label>Password</label><br>
-        <input type="password" id="profilePassword" placeholder="New password (optional)"><br><br>
-
-        <button type="submit">Save</button>
-        <button type="button" id="closeProfileModal">Cancel</button>
-      </form>
+        <div id="selectedIngredients"></div>
     </div>
-  </div>
+
+    <button id="LoadBTN">Load Meals</button>
+    <div id="output"></div>
+
+    <div id="profileModal">
+        <div class="modal-content">
+            <h3>Edit My Profile</h3>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
+                To update your profile, please confirm your current email and password.
+            </p>
+
+            <form id="profileForm">
+                <label>Username</label><br>
+                <input type="text" id="profileName"><br><br>
+
+                <label>Email</label><br>
+                <input type="email" id="profileEmail"><br><br>
+
+                <label>Current Email</label><br>
+                <input type="email" id="profileCurrentEmail" placeholder="Enter current email" required><br><br>
+
+                <label>Current Password</label><br>
+                <input type="password" id="profileCurrentPassword" placeholder="Enter current password" required><br><br>
+
+                <label>New Password (optional)</label><br>
+                <input type="password" id="profileNewPassword" placeholder="Leave empty to keep current password"><br><br>
+
+                <button type="submit">Save</button>
+                <button type="button" id="closeProfileModal">Cancel</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
