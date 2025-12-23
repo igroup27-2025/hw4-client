@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Meals</title>
+
+  <style>
+    .meals-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .meal-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      text-align: center;
+      transition: 0.2s;
+      width: 250px;
+    }
+
+    .meal-card:hover {
+      transform: scale(1.03);
+    }
+
+    .meal-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .meal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 6px 0 10px;
+    }
+
+    .meal-id {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .deleteBtn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background-color: #f5f7fa;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #greeting {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      color: #003366;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #homeBtn,
+    #addMealBtn {
+      padding: 8px 16px;
+      background-color: #e6e6e6;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #logoutBtn {
+      padding: 8px 16px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../Scripts/ajaxCall.js"></script>
+
+  <script>
+    let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+    let user = null;
+    let userId = null;
+
+    let userMeals = [];
+
+    $(document).ready(function () {
+      let logged = localStorage.getItem("loggedUser");
+      if (!logged) {
+        window.location.href = "LoginForm.html";
+        return;
+      }
+
+      user = JSON.parse(logged);
+      userId = user.Id || user.id;
+
+      $("#topBar").html(`
+        <h2 id="greeting">Hello ${user.Name || user.name || user.Email || user.email}</h2>
+        <div class="actions">
+          <button id="homeBtn">Home</button>
+          <button id="addMealBtn">Add Meal</button>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      `);
+
+      $(document).on("click", "#homeBtn", function () {
+        window.location.href = "index.html";
+      });
+
+      $(document).on("click", "#addMealBtn", function () {
+        window.location.href = "NewMeal.html";
+      });
+
+      $(document).on("click", "#logoutBtn", function () {
+        localStorage.removeItem("loggedUser");
+        window.location.href = "LoginForm.html";
+      });
+
+      loadMeals();
+
+      $("#filterBtn").click(function () {
+        let name = $("#filterInput").val().trim();
+        filterMeals(name);
+      });
+
+      $(document).on("click", ".deleteBtn", function () {
+        let mealId = $(this).data("id");
+        deleteMeal(mealId);
+      });
+    });
+
+    function loadMeals() {
+      let api = server + "api/Users/GetUserMeals/" + userId;
+
+      ajaxCall("GET", api, "", function (res) {
+        userMeals = res || [];
+        renderMeals(userMeals);
+      }, function (err) {
+        console.log(err);
+      });
+    }
+
+    function filterMeals(name) {
+      name = (name || "").trim().toLowerCase();
+
+      if (name === "") {
+        renderMeals(userMeals);
+        return;
+      }
+
+      let filtered = userMeals.filter(m => {
+        let mealName = (m.Name || m.name || m.MealName || "").toLowerCase();
+        return mealName.includes(name);
+      });
+
+      renderMeals(filtered);
+    }
+
+    function deleteMeal(mealId) {
+      let url = server + "api/Meal/Cart/" + userId + "/" + mealId;
+
+      ajaxCall("DELETE", url, "", function () {
+        loadMeals();
+      }, function (err) {
+        console.log(err);
+      });
+    }
+
+    function renderMeals(meals) {
+      let html = `<div class="meals-container">`;
+
+      if (!meals || meals.length === 0) {
+        html += `<div class="no-meals">No meals found.</div>`;
+      } else {
+        meals.forEach(m => {
+          let id = m.Id || m.id || m.MealId;
+          let name = m.Name || m.name || m.MealName;
+          let img = m.Image || m.image || "";
+
+          html += `
+            <div class="meal-card">
+              ${img ? `<img src="${img}" alt="${name || ""}" class="meal-img">` : ``}
+              <div class="meal-id">ID: ${id}</div>
+              <h3 class="meal-title">${name || ""}</h3>
+              <button class="deleteBtn" data-id="${id}">DELETE</button>
+            </div>
+          `;
+        });
+      }
+
+      html += `</div>`;
+      $("#mealsContainer").html(html);
+    }
+  </script>
+</head>
+
+<body>
+  <div id="topBar"></div>
+  <h1>Meals List</h1>
+
+  <br><br>
+
+  <input id="filterInput" type="text" placeholder="Enter meal name">
+  <br><br>
+
+  <button id="filterBtn">Filter</button>
+  <br><br>
+
+  <div id="mealsContainer" style="margin-top:20px;"></div>
+</body>
+</html>

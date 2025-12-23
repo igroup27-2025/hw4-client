@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e9f2ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #registerForm {
+            background: #ffffff;
+            padding: 25px 35px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,255,0.15);
+            width: 360px;
+        }
+
+        #registerTB {
+            width: 100%;
+        }
+
+        #registerTB td {
+            padding: 8px 0;
+            color: #003366;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #a3c4ff;
+            border-radius: 6px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #005ce6;
+            box-shadow: 0 0 5px rgba(0, 92, 230, 0.3);
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background: #0066ff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background: #0052cc;
+        }
+
+        .error {
+            border-color: red !important;
+        }
+
+        #loginLink {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            color: #0052cc;
+            text-decoration: none;
+        }
+
+        #loginLink:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="../Scripts/ajaxCall.js"></script>
+
+    <script>
+        let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+        let RegisterApi = server + "api/Users/Register";
+
+        $(document).ready(function () {
+            $("#registerForm").submit(submitRegister);
+        });
+
+        function submitRegister(e) {
+            e.preventDefault();
+
+            $(".error").removeClass("error");
+
+            let name = $("#NameTB").val().trim();
+            let email = $("#EmailTB").val().trim();
+            let password = $("#PasswordTB").val().trim();
+            let active = $("#ActiveCB").is(":checked");
+
+            let errors = [];
+
+            let nameRegex = /^[A-Za-z]{2,}$/;
+            if (!nameRegex.test(name)) {
+                $("#NameTB").addClass("error");
+                errors.push("Name must contain only letters and be at least 2 characters");
+            }
+
+            let emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
+            if (!emailRegex.test(email)) {
+                $("#EmailTB").addClass("error");
+                errors.push("Email is not valid");
+            }
+
+          let passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                $("#PasswordTB").addClass("error");
+                errors.push("Password must be at least 8 characters, contain one uppercase letter and one number");
+            }
+
+            if (errors.length > 0) {
+                alert(errors.join("\n"));
+                return;
+            }
+
+            let user = {
+                Name: name,
+                Email: email,
+                Password: password,
+                Active: active
+            };
+
+            ajaxCall("POST", RegisterApi, JSON.stringify(user), RegisterSC, RegisterEC);
+                function RegisterSC(res) {
+                alert("Registered Successfully");
+                window.location.href = "https://proj.ruppin.ac.il/igroup27/test2/tar2/Pages/LoginForm.html";
+                }
+
+                function RegisterEC(err) {
+                    console.log(err);
+                    alert(err.responseText || "Registration failed");
+                }
+        }
+    </script>
+</head>
+<body>
+    <form id="registerForm">
+        <table id="registerTB">
+            <tr>
+                <td>Name</td>
+                <td><input type="text" id="NameTB" required /></td>
+            </tr>
+            <tr>
+                <td>Email</td>
+                <td><input type="email" id="EmailTB" required /></td>
+            </tr>
+            <tr>
+                <td>Password</td>
+                <td><input type="password" id="PasswordTB" required /></td>
+            </tr>
+            <tr>
+                <td>Active</td>
+                <td>
+                    <input type="checkbox" id="ActiveCB" checked />
+                </td>
+            </tr>
+        </table>
+        <input type="submit" value="Register" />
+        <a id="loginLink" href="LoginForm.html">Already have an account? Login</a>
+    </form>
+</body>
+</html>

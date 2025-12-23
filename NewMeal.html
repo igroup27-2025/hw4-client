@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Meal</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e9f2ff;
+      margin: 0;
+    }
+
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background-color: #f5f7fa;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #greeting {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      color: #003366;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #homeBtn,
+    #myMealsBtn {
+      padding: 8px 16px;
+      background-color: #e6e6e6;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #logoutBtn {
+      padding: 8px 16px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #NewMealForm {
+      background: #ffffff;
+      padding: 25px 35px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,255,0.15);
+      width: 370px;
+      margin: 40px auto;
+    }
+
+    #AddNewMeal {
+      width: 100%;
+    }
+
+    #AddNewMeal td {
+      padding: 10px 0;
+      color: #003366;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #a3c4ff;
+      border-radius: 6px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #005ce6;
+      box-shadow: 0 0 5px rgba(0, 92, 230, 0.3);
+    }
+
+    input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background: #0066ff;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 15px;
+    }
+
+    input[type="submit"]:hover {
+      background: #0052cc;
+    }
+
+    .error {
+      border-color: #ff4d4d !important;
+      box-shadow: 0 0 5px rgba(255, 77, 77, 0.4) !important;
+    }
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../Scripts/ajaxCall.js"></script>
+
+  <script>
+    let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+    let api = "";
+    let userId = null;
+    let user = null;
+
+    $(document).ready(function () {
+      let logged = localStorage.getItem("loggedUser");
+      if (!logged) {
+        window.location.href = "LoginForm.html";
+        return;
+      }
+
+      user = JSON.parse(logged);
+      userId = user.Id || user.id;
+
+      api = server + "api/Meal?userId=" + userId;
+
+      $("#topBar").html(`
+        <h2 id="greeting">Hello ${user.Name || user.name || user.Email || user.email}</h2>
+        <div class="actions">
+          <button id="homeBtn">Home</button>
+          <button id="myMealsBtn">My Meals</button>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      `);
+
+      $(document).on("click", "#homeBtn", function () {
+        window.location.href = "index.html";
+      });
+
+      $(document).on("click", "#myMealsBtn", function () {
+        window.location.href = "MyMeals.html";
+      });
+
+      $(document).on("click", "#logoutBtn", function () {
+        localStorage.removeItem("loggedUser");
+        window.location.href = "LoginForm.html";
+      });
+
+      $("#NewMealForm").submit(submitNewMeal);
+    });
+
+    function submitNewMeal(e) {
+      e.preventDefault();
+      $(".error").removeClass("error");
+
+      let name = $("#NameTB").val().trim();
+      let category = $("#CategoryTB").val().trim();
+      let area = $("#AreaTB").val().trim() || "";
+      let instructions = $("#InstructionsTB").val().trim() || "";
+      let image = $("#ImageTB").val().trim();
+      let video = $("#VideoTB").val().trim() || "";
+      let source = $("#SourceTB").val().trim() || "";
+      let ingredientsInput = $("#IngredientsTB").val().trim();
+
+      let ingredientsArr = [];
+      if (ingredientsInput.length > 0) {
+        ingredientsArr = ingredientsInput
+          .split(",")
+          .map(x => x.trim())
+          .filter(x => x.length > 0);
+      }
+
+      let errors = [];
+
+      if (!name) { $("#NameTB").addClass("error"); errors.push("Name is required"); }
+      if (!category) { $("#CategoryTB").addClass("error"); errors.push("Category is required"); }
+
+      let imageRegex = /^https?:\/\/.+/i;
+      if (!imageRegex.test(image)) {
+        $("#ImageTB").addClass("error");
+        errors.push("Image must be a valid URL");
+      }
+
+      if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return;
+      }
+
+      let newMeal = {
+        Name: name,
+        Category: category,
+        Area: area,
+        Instructions: instructions,
+        Image: image,
+        Video: video,
+        Source: source,
+        Ingredients: ingredientsArr
+      };
+
+      ajaxCall("POST", api, JSON.stringify(newMeal), AddMealSCB, AddMealECB);
+
+      function AddMealSCB(res) {
+        alert("Meal created successfully");
+        console.log(res);
+      }
+
+      function AddMealECB(err) {
+        console.log(err);
+        alert(err.responseText || "Failed to create meal");
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="topBar"></div>
+
+  <form id="NewMealForm">
+    <table id="AddNewMeal">
+      <tr>
+        <td>*Name</td>
+        <td><input type="text" id="NameTB" required /></td>
+      </tr>
+      <tr>
+        <td>*Category</td>
+        <td><input type="text" id="CategoryTB" required /></td>
+      </tr>
+      <tr>
+        <td>Area</td>
+        <td><input type="text" id="AreaTB" /></td>
+      </tr>
+      <tr>
+        <td>Instructions</td>
+        <td><input type="text" id="InstructionsTB" /></td>
+      </tr>
+      <tr>
+        <td>*Image</td>
+        <td><input type="text" id="ImageTB" placeholder="Image URL" required /></td>
+      </tr>
+      <tr>
+        <td>Video</td>
+        <td><input type="text" id="VideoTB" placeholder="Video URL (optional)" /></td>
+      </tr>
+      <tr>
+        <td>Source</td>
+        <td><input type="text" id="SourceTB" /></td>
+      </tr>
+      <tr>
+        <td>Ingredients</td>
+        <td><input type="text" id="IngredientsTB" placeholder="salt, pepper, garlic" /></td>
+      </tr>
+    </table>
+
+    <input type="submit" value="Submit New Meal" />
+  </form>
+</body>
+</html>

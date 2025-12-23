@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meals</title>
+    <style>
+        .meals-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .meal-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .meal-card:hover {
+            transform: scale(1.03);
+        }
+
+        .meal-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .meal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .AddCartBTN {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #LoadBTN {
+        display: block;
+        margin: 20px auto;
+        font-size: 20px;
+        padding: 12px 30px;
+        background-color: #0066ff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+        }
+
+        #greeting {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 26px;
+        font-weight: 600;
+        color: #003366;
+        letter-spacing: 0.5px;
+        }
+
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: #f5f7fa;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #greeting {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #003366;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #loginBtn {
+            padding: 8px 16px;
+            background-color: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #myMealsBtn,
+        #addMealBtn,
+        #editProfileBtn {
+            padding: 8px 16px;
+            background-color: #e6e6e6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #logoutBtn {
+            padding: 8px 16px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+         #profileModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        #profileModal .modal-content {
+            background: white;
+            width: 360px;
+            margin: 12% auto;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        #ingredientsSearch {
+            margin: 15px 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        #selectedIngredients {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ingredient-chip {
+            background: #e6e6e6;
+            padding: 6px 10px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ingredient-chip button {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="../Scripts/ajaxCall.js">  </script> 
+    <script>
+        $(document).ready(function () {
+            let user = null;
+            let logged = localStorage.getItem("loggedUser");
+
+            if (logged) {
+            user = JSON.parse(logged);
+
+            $("#topBar").html(`
+                <h2 id="greeting">Hello ${user.Name || user.name || user.Email || user.email}</h2>
+                <div class="actions">
+                <button id="myMealsBtn">My Meals</button>
+                <button id="addMealBtn">Add Meal</button>
+                <button id="editProfileBtn">Edit My Profile</button>
+                <button id="logoutBtn">Logout</button>
+                </div>
+            `);
+            } else {
+            $("#topBar").html(`
+                <h2 id="greeting">Hello guest</h2>
+                <div class="actions">
+                <button id="loginBtn">Login</button>
+                </div>
+            `);
+            }
+
+
+            $(document).on("click", "#loginBtn", function () {
+            window.location.href = "LoginForm.html";
+            });
+
+            $(document).on("click", "#logoutBtn", function () {
+            localStorage.removeItem("loggedUser");
+            window.location.href = "LoginForm.html";
+            });
+
+            $(document).on("click", "#myMealsBtn", function () {
+            window.location.href = "MyMeals.html";
+            });
+
+            $(document).on("click", "#addMealBtn", function () {
+            window.location.href = "NewMeal.html";
+            });
+
+
+            let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+            let getAllMealsApi = server + "api/Meal/GetAllMeals";
+            let CartApi = server + "api/Meal/AddMealCart";
+
+            $("#LoadBTN").click(function () {
+            ajaxCall("GET", getAllMealsApi, "", LoadSCB, LoadECB)
+                function LoadSCB (meals) {
+                renderMeals(meals);
+                }
+                function LoadECB (err) {
+                console.log(err);
+                }
+
+            });
+
+            
+            $(document).on("click", ".AddCartBTN", function () {
+                if (!user) {
+                    window.location.href = "LoginForm.html"
+                    return;
+                }
+            
+            let userId = user.Id || user.id;
+            let mealId = $(this).data("id");
+
+            let body = { userId: userId, mealId: mealId };
+
+            ajaxCall("POST", CartApi, JSON.stringify(body), AddSCB, AddECB);
+            })   
+
+            function AddSCB (res) {
+                console.log(res);
+            };
+
+            function AddECB (err) {
+                console.log(err)
+            };
+
+            let updateUserApi = server + "api/Users/"; // PUT api/Users/{id}
+
+            $(document).on("click", "#editProfileBtn", function () {
+            if (!user) return;
+
+            $("#profileName").val(user.Name || user.name || "");
+            $("#profileEmail").val(user.Email || user.email || "");
+            $("#profilePassword").val(""); // Not showing password
+            $("#profileModal").show();
+            });
+
+            $(document).on("click", "#closeProfileModal", function () {
+                $("#profileModal").hide();
+                });
+
+            $(document).on("submit", "#profileForm", function (e) {
+            e.preventDefault();
+
+            let userId = user.Id || user.id;
+            let newName = $("#profileName").val().trim();
+            let newEmail = $("#profileEmail").val().trim();
+            let newPassword = $("#profilePassword").val().trim();
+
+            let updateUser = {
+                Id: userId,
+                Name: newName,
+                Email: newEmail
+            };
+
+            if (!newName || !newEmail) {
+                alert("Name and Email are required");
+                return;
+            }
+
+            if (newPassword !== "") {
+                updateUser.Password = newPassword;
+            }
+
+            ajaxCall("PUT", updateUserApi + userId, JSON.stringify(updateUser), UpdateSCB, UpdateECB)
+
+            function UpdateSCB (res) {
+            user = res;                                              
+            localStorage.setItem("loggedUser", JSON.stringify(user));
+            $("#greeting").text(`Hello ${user.Name || user.name || user.Email || user.email}`);
+            $("#profileModal").hide();
+            }
+
+            function UpdateECB (err) {
+            console.log(err);
+            alert(err.responseText || "Update failed");
+            };
+            });
+            
+            selectedIngredientsArr = [];
+            $(document).on("click", "#addIngredientBtn", function () {
+            let ing = $("#ingredientInput").val().trim();
+            if (!ing) return;
+
+            if (selectedIngredientsArr.includes(ing)) {
+                $("#ingredientInput").val("");
+                return;
+            }
+
+            selectedIngredientsArr.push(ing);
+            $("#ingredientInput").val("");
+            renderSelectedIngredients();
+            });
+
+            $(document).on("click", "#clearIngredientsBtn", function () {
+            selectedIngredientsArr = [];
+            renderSelectedIngredients();
+            });
+
+            $(document).on("click", ".removeIngBtn", function () {
+            let idx = parseInt($(this).data("idx"));
+            selectedIngredientsArr.splice(idx, 1);
+            renderSelectedIngredients();
+            });
+
+            let getAllIngredientsApi = server + "api/Meal/GetAllIngredients";
+
+            ajaxCall("GET", getAllIngredientsApi, "", IngSCB, IngECB) 
+           
+            function IngSCB (ingredients) {
+                let html = "";
+                (ingredients || []).forEach(i => {
+                html += `<option value="${i}"></option>`;
+                });
+                $("#ingredientsList").html(html);
+            }
+
+            function IngECB (err) {
+                console.log(err);
+            }
+
+            let getByIngredientsApi = server + "api/Meal/GetByIngredients";
+
+            $(document).on("click", "#searchByIngredientsBtn", function () {
+            ajaxCall("POST", getByIngredientsApi, JSON.stringify(selectedIngredientsArr), SearchIngSCB , SearchIngECB)
+                function SearchIngSCB(meals) {
+                renderMeals(meals);
+                }
+                function SearchIngECB(err) {
+                console.log(err);
+                }
+            });
+
+        });
+
+        let selectedIngredientsArr = [];
+
+        function renderSelectedIngredients() {
+        let html = "";
+
+        selectedIngredientsArr.forEach((ing, idx) => {
+            html += `
+            <span class="ingredient-chip">
+                ${ing}
+                <button class="removeIngBtn" data-idx="${idx}">✖</button>
+            </span>
+            `;
+        });
+
+        $("#selectedIngredients").html(html);
+        }
+
+        function renderMeals(meals) {
+        let html = `<div class="meals-container">`;
+
+        (meals || []).forEach(meal => {
+            html += `
+            <div class="meal-card">
+                <img src="${meal.Image || meal.image || ""}" class="meal-img">
+                <h3 class="meal-title">${meal.Name || meal.name || ""}</h3>
+                <button class="AddCartBTN" data-id="${meal.Id || meal.id}">Add To Cart</button>
+            </div>
+            `;
+        });
+
+        html += `</div>`;
+        $("#output").html(html);
+        }
+
+   
+    </script>   
+</head>
+<body>
+  <div id="topBar"></div>
+
+  <div id="ingredientsSearch">
+    <input id="ingredientInput" list="ingredientsList" placeholder="Type ingredient..." />
+    <datalist id="ingredientsList"></datalist>
+
+    <button id="addIngredientBtn" type="button">Add</button>
+    <button id="searchByIngredientsBtn" type="button">Search</button>
+    <button id="clearIngredientsBtn" type="button">Clear</button>
+
+    <div id="selectedIngredients"></div>
+  </div>
+
+  <button id="LoadBTN">Load Meals</button>
+  <div id="output"></div>
+
+  <div id="profileModal">
+    <div class="modal-content">
+      <h3>Edit My Profile</h3>
+
+      <form id="profileForm">
+        <label>Username</label><br>
+        <input type="text" id="profileName"><br><br>
+
+        <label>Email</label><br>
+        <input type="email" id="profileEmail"><br><br>
+
+        <label>Password</label><br>
+        <input type="password" id="profilePassword" placeholder="New password (optional)"><br><br>
+
+        <button type="submit">Save</button>
+        <button type="button" id="closeProfileModal">Cancel</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

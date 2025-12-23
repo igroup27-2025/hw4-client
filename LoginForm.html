@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script    
+    src="../Scripts/ajaxCall.js">
+    </script> 
+    
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e9f2ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #loginForm {
+            background: #ffffff;
+            padding: 25px 35px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,255,0.15);
+            width: 320px;
+        }
+
+        #loginTB {
+            width: 100%;
+        }
+
+        #loginTB td {
+            padding: 10px 0;
+            color: #003366;
+            font-weight: bold;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #a3c4ff;
+            border-radius: 6px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #005ce6;
+            box-shadow: 0 0 5px rgba(0, 92, 230, 0.3);
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background: #0066ff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background: #0052cc;
+        }
+
+        #registerLink {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            color: #0052cc;
+            text-decoration: none;
+        }
+
+        #registerLink:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <script>
+        let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+        let LoginApi = server + "api/Users/Login";
+        $(document).ready(function () {
+            $("#loginForm").submit(SubmitLogin)
+        });
+        
+        function SubmitLogin(e) {
+            e.preventDefault();
+            let user = {
+            Id: 0,
+            Name: "",
+            Email: $("#EmailTB").val(),
+            Password: $("#PasswordTB").val(),
+            Active: true
+            };
+
+            ajaxCall("POST", LoginApi, JSON.stringify(user), 
+            function LoginSC(res) {
+            localStorage.setItem("loggedUser", JSON.stringify(res));
+            window.location.href = "index.html"}, 
+            function LoginEC(err){
+            alert("Wrong email or password");
+                    console.log(err);  
+            })
+        };
+
+     </script>
+</head>
+<body>
+    <form id="loginForm">
+        <table id="loginTB">
+            <tr>
+                <td>Email</td>
+                <td><input type="text" id="EmailTB" required/></td>
+            </tr>
+            <tr>
+                <td>Password</td>
+                <td><input type="password" id="PasswordTB" required/></td>
+            </tr>
+        </table>
+        <input type="submit" value="Login" />
+        <a id="registerLink" href="RegisterForm.html">New user? Register here</a>
+    </form>
+</body>
+</html>

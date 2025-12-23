@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seed Meals</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../Scripts/ajaxCall.js"></script>
+</head>
+<body>
+  <h2>Seed Meals (one time)</h2>
+  <button id="seedBtn">Insert 250 meals into DB</button>
+  <p id="status"></p>
+
+  <script>
+  let server = "https://proj.ruppin.ac.il/igroup27/test2/tar1/";
+  let seedApi = server + "api/Meal/SeedMeals";
+
+  $("#seedBtn").click(function () {
+    $("#status").text("Loading JSON...");
+
+    $.getJSON("./meals_250_MealsDB.json", function (data) {
+      let meals = data.meals || data;
+
+      let toSend = meals.map(m => ({
+        name: m.strMeal,
+        category: m.strCategory,
+        area: m.strArea,
+        instructions: m.strInstructions,
+        image: m.strMealThumb,
+        video: m.strYoutube,
+        source: m.strSource || "",
+        Ingredients: m.ingredients || [] 
+      }));
+
+      $("#status").text("Sending " + toSend.length + " meals to server...");
+
+      ajaxCall("POST", seedApi, JSON.stringify(toSend),
+        function (res) {
+          $("#status").text("Done ✅ Inserted: " + (res.inserted ?? res));
+        },
+        function (err) {
+  console.log("SEED ERROR full:", err);
+  const msg =
+    err.responseText ||
+    (err.responseJSON ? JSON.stringify(err.responseJSON) : "") ||
+    err.statusText ||
+    JSON.stringify(err);
+  $("#status").text(msg);
+}
+
+      );
+    }).fail(function () {
+      $("#status").text("Failed to load meals_250_MealsDB.json");
+    });
+  });
+</script>
+
+</body>
+</html>
